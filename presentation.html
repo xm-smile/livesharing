@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你也可以做到！教你一个人+AI制作并上线微信小游戏</title>
+
+    <!-- Google Fonts: Inter & Roboto Mono (smilez.ai style) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Premium Light Mode Colors (Apple-esque Ceramic White) */
+            --bg-color: #f5f5f7;
+            --surface-color: rgba(255, 255, 255, 0.65);
+            --surface-hover: rgba(255, 255, 255, 0.9);
+            --border-color: rgba(0, 0, 0, 0.08);
+
+            /* Typography Colors */
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #a1a1a6;
+
+            /* Accents */
+            --accent-red: #ff3b30;
+            --accent-cyan: #007aff;
+            /* Switched to blue for better contrast */
+            --accent-purple: #af52de;
+            --accent-yellow: #ff9500;
+
+            /* Typography */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+
+            /* Sizing & Spacing */
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+            /* For presentation */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Global Glow Effects (light mode) */
+        .bg-glow {
+            position: fixed;
+            top: -20vh;
+            left: -10vw;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(175, 82, 222, 0.08) 0%, rgba(245, 245, 247, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            bottom: -20vh;
+            right: -10vw;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.06) 0%, rgba(245, 245, 247, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Typography Utilities */
+        .text-gradient {
+            background: linear-gradient(135deg, #1d1d1f, #86868b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+
+        .text-gradient-cyan {
+            background: linear-gradient(135deg, #007aff, #af52de);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        /* Glassmorphism Utilities (light style) */
+        .glass-panel {
+            background: var(--surface-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2.5rem;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Presentation Engine */
+        #deck {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 4rem 6rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease, visibility 0.6s;
+            z-index: 0;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            z-index: 10;
+        }
+
+        .slide.past {
+            transform: translateY(-20px);
+        }
+
+        /* Slide Components */
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1.25rem;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4));
+            backdrop-filter: blur(8px);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 2.8rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .stage-num {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            letter-spacing: 0.1em;
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 1.2rem;
+            border-radius: 100px;
+            background: var(--surface-color);
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1.2rem;
+            color: var(--accent-cyan);
+        }
+
+        p,
+        li {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        blockquote {
+            font-size: 1.8rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin: 3rem 0;
+            padding-left: 2rem;
+            border-left: 3px solid var(--accent-purple);
+            font-weight: 300;
+            max-width: 900px;
+        }
+
+        /* Abstract Placeholders */
+        .media-placeholder {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+        }
+
+        .media-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.7) 50%, transparent 60%);
+            background-size: 200% 200%;
+            animation: shimmer 4s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -100% 100%;
+            }
+
+            100% {
+                background-position: 200% -100%;
+            }
+        }
+
+        .media-label {
+            font-family: var(--font-mono);
+            color: var(--text-tertiary);
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            z-index: 1;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 100px;
+            background: var(--surface-color);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Timeline (Stage Process) */
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 24px;
+            bottom: -2rem;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid var(--accent-cyan);
+            margin-right: 1.5rem;
+            z-index: 1;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .timeline-content h4 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Staggered Animations */
+        .slide.active .anim-el {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .slide .anim-el {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .d-1 {
+            animation-delay: 0.1s !important;
+        }
+
+        .d-2 {
+            animation-delay: 0.2s !important;
+        }
+
+        .d-3 {
+            animation-delay: 0.3s !important;
+        }
+
+        .d-4 {
+            animation-delay: 0.4s !important;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Progress & Controls */
+        .progress-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.06);
+            z-index: 100;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            z-index: 100;
+        }
+
+        .counter {
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            background: var(--surface-color);
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Navigation Buttons */
+        .nav-controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-btn:hover {
+            background: #ffffff;
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-btn:active {
+            transform: translateY(1px);
+        }
+
+        .nav-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-btn.prev:hover svg {
+            transform: translateX(-2px);
+        }
+
+        .nav-btn.next:hover svg {
+            transform: translateX(2px);
+        }
+
+        .nav-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            color: var(--text-primary);
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-nav {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            /* 默认状态：完全透明，只有悬浮的点 */
+            background: transparent;
+            backdrop-filter: none;
+            padding: 20px 10px;
+            border-radius: 24px;
+            border: 1px solid transparent;
+            box-shadow: none;
+
+            max-height: 90vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            width: 30px;
+            align-items: center;
+            /* 默认居中对齐圆点 */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+            /* 隐藏滚动条让外观更干净 */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .sidebar-nav:hover {
+            width: 220px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            align-items: stretch;
+            /* 悬浮时让内部项目撑满宽度 */
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 默认水平居中对齐圆点 */
+            gap: 12px;
+            cursor: pointer;
+            padding: 0;
+            /* 默认无内边距 */
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            color: var(--text-tertiary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav:hover .sidebar-item {
+            padding: 8px 12px;
+            /* 展开时恢复舒适的内边距 */
+            justify-content: flex-start;
+            /* 展开时靠左对齐 */
+        }
+
+        .sidebar-item:hover {
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav:hover .sidebar-item:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .sidebar-item.active {
+            color: var(--accent-cyan);
+        }
+
+        .sidebar-nav:hover .sidebar-item.active {
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        .sidebar-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.25;
+            /* 让非激活状态的点变淡，降低关注度 */
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            flex-shrink: 0;
+            margin: 0;
+            /* 默认无边距，靠父级居中 */
+        }
+
+        .sidebar-item:hover .sidebar-dot {
+            opacity: 0.6;
+            /* 悬浮时稍微变亮 */
+        }
+
+        .sidebar-item.active .sidebar-dot {
+            transform: scale(1.5);
+            opacity: 1;
+            /* 激活时完全实心且放大 */
+        }
+
+        .sidebar-text {
+            white-space: nowrap;
+            opacity: 0;
+            max-width: 0;
+            /* 默认占据0宽度，不影响圆点居中 */
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-nav:hover .sidebar-text {
+            opacity: 1;
+            max-width: 200px;
+            /* 展开时释放宽度 */
+        }
+
+        /* Lightbox styles */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox img,
+        .lightbox video {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            object-fit: contain;
+        }
+
+        .lightbox.active img,
+        .lightbox.active video {
+            transform: scale(1);
+        }
+
+        /* Make all presentation media appear zoomable except those with no-zoom */
+        .slide img:not(.no-zoom),
+        .slide video:not(.no-zoom) {
+            cursor: zoom-in;
+            transition: transform 0.2s ease;
+        }
+
+        .slide img:not(.no-zoom):hover,
+        .slide video:not(.no-zoom):hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background Glows -->
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <div id="deck">
+
+        <!-- Slide 1: Cover -->
+        <section class="slide active">
+            <h2 class="anim-el d-1" style="display: none;">首页</h2>
+            <div style="max-width: 1000px; margin: 0 auto; text-align: center;">
+                <div class="anim-el d-1 hero-badge mono">AI游戏制作直播课程</div>
+
+                <h1 class="anim-el d-2" style="font-size: 4.5rem; line-height: 1.1; margin-bottom: 2rem;">
+                    Building the <span class="text-gradient">Game with AI
+                </h1>
+
+                <p class="anim-el d-3" style="font-size: 1.4rem; color: var(--text-secondary); margin-bottom: 4rem;">
+                    你也可以做到！教你一个人+AI制作并上线微信小游戏<br>
+                    <span style="font-size: 1.1rem; opacity: 0.7; margin-top: 1rem; display: inline-block;">——
+                        纯代码实现的唯美画风小游戏开发经验分享</span>
+                </p>
+
+
+        </section>
+
+        <!-- Slide 2: 自我介绍 -->
+        <section class="slide">
+            <div style="max-width: 960px; margin: 0 auto; width: 100%;">
+                <h2 class="anim-el d-1" style="justify-content: center; margin-bottom: 3rem;"><span
+                        class="stage-num">01</span> 自我介绍</h2>
+
+                <div class="anim-el d-2 glass-panel"
+                    style="padding: 4rem; position: relative; overflow: hidden; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);">
+                    <!-- Decorative background element inside the card -->
+                    <div
+                        style="position: absolute; right: -10%; top: -20%; width: 60%; height: 150%; background: radial-gradient(circle, rgba(0,122,255,0.04) 0%, transparent 70%); z-index: 0; pointer-events: none;">
+                    </div>
+
+                    <div style="position: relative; z-index: 1;">
+                        <h3
+                            style="color: var(--text-primary); font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                            庄炜骁 <span style="font-weight: 300; color: var(--text-secondary);">smilezhuang</span></h3>
+                        <div class="mono"
+                            style="display: inline-block; padding: 0.4rem 1rem; border-radius: 100px; color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 3rem; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,122,255,0.06); border: 1px solid rgba(0,122,255,0.15);">
+                            Product Manager & AI Game Developer
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
+                            <div>
+                                <h4
+                                    style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; font-family: var(--font-mono);">
+                                    Work Experience</h4>
+                                <ul style="font-size: 1.1rem; display: flex; flex-direction: column; gap: 1rem;">
+                                    <li>2022-2024在 <strong>IEG</strong> 担任中台产品经理</li>
+                                    <li>2024-至今在 <strong>WXG</strong> 做小游戏产品经理</li>
+                                    <li>一直在游戏行业从事相关工作</li>
+                                </ul>
+                            </div>
+
+                            <div style="display: flex; align-items: stretch;">
+                                <div
+                                    style="background: rgba(255,59,48,0.03); border-left: 3px solid var(--accent-red); padding: 2rem; border-radius: 0 16px 16px 0; width: 100%; display: flex; flex-direction: column; justify-content: center;">
+                                    <h4
+                                        style="color: var(--accent-red); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono);">
+                                        Pain Point</h4>
+                                    <p
+                                        style="color: var(--text-primary); font-size: 1.3rem; font-weight: 400; line-height: 1.6; margin: 0;">
+                                        "却从来没有过<span
+                                            style="color: var(--accent-red); font-weight: 600;">真正的游戏<br>项目经验。</span>"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: 先上成品 -->
+        <section class="slide">
+            <h2 class="anim-el d-1" style="justify-content: center;"><span class="stage-num">02</span> 先上成品：一个人+AI做出来的游戏
+            </h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div style="position: relative; width: 100%; aspect-ratio: 16/9;">
+                    <!-- PC Video -->
+                    <div class="glass-panel"
+                        style="padding: 0.5rem; border-radius: 16px; width: 85%; position: absolute; top: 0; left: 0; box-shadow: 0 12px 40px rgba(0,0,0,0.08); z-index: 1;">
+                        <video src="./孤岛守护pc端素材.mp4" autoplay loop muted playsinline
+                            style="width: 100%; border-radius: 12px; display: block; background: #000; border: 1px solid rgba(0,0,0,0.05);"></video>
+                    </div>
+
+                    <!-- Mobile Video (Floating overlapping) -->
+                    <div class="glass-panel"
+                        style="padding: 0.4rem; border-radius: 20px; width: 28%; position: absolute; bottom: -10%; right: 5%; z-index: 2; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border-color: rgba(0,0,0,0.1);">
+                        <video src="./孤岛守护移动端素材.mp4" autoplay loop muted playsinline
+                            style="width: 100%; border-radius: 16px; display: block; background: #000; border: 1px solid rgba(0,0,0,0.05);"></video>
+                    </div>
+                </div>
+
+                <div style="padding-left: 2rem;">
+                    <div class="hero-badge mono" style="margin-bottom: 1rem; border: 1px solid rgba(0,0,0,0.1);">独立开发 ·
+                        纯代码生成</div>
+                    <h3 style="font-size: 2.2rem; margin-bottom: 0.5rem; color: var(--text-primary);">孤岛守护 <span
+                            class="text-gradient">The Island Guard</span></h3>
+                    <p style="margin-bottom: 1rem;">纯代码打造的 3D 塔防体验，一套架构支持多端运行。</p>
+
+                    <div style="display: flex; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                        <span
+                            style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary); background: rgba(0,0,0,0.03); padding: 0.3rem 0.8rem; border-radius: 100px; border: 1px solid var(--border-color);">微信小游戏</span>
+                        <span
+                            style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary); background: rgba(0,0,0,0.03); padding: 0.3rem 0.8rem; border-radius: 100px; border: 1px solid var(--border-color);">移动端
+                            APK</span>
+                        <span
+                            style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary); background: rgba(0,0,0,0.03); padding: 0.3rem 0.8rem; border-radius: 100px; border: 1px solid var(--border-color);">PC
+                            客户端</span>
+                        <span
+                            style="font-size: 0.85rem; font-weight: 500; color: var(--text-primary); background: rgba(0,0,0,0.03); padding: 0.3rem 0.8rem; border-radius: 100px; border: 1px solid var(--border-color);">网页端
+                            (H5)</span>
+                    </div>
+
+                
+
+                    <div
+                        style="background: rgba(255,59,48,0.05); border-left: 3px solid var(--accent-red); padding: 1.5rem; border-radius: 0 12px 12px 0;">
+                        <h4
+                            style="color: var(--accent-red); font-size: 1.1rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            极致的"零资源"</h4>
+                        <div style="display: flex; gap: 3rem; margin-bottom: 1rem;">
+                            <div><span
+                                    style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary);">166</span>
+                                <span class="mono" style="font-size: 0.9rem; color: var(--text-secondary);">JS
+                                    Files</span>
+                            </div>
+                            <div><span
+                                    style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary);">&lt;4</span>
+                                <span class="mono" style="font-size: 0.9rem; color: var(--text-secondary);">MB
+                                    Size</span>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-primary); font-size: 1.1rem; margin: 0;"><strong>0</strong> 模型文件 /
+                            <strong>0</strong> 贴图文件 / <strong>0</strong> 音频文件
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: 为什么做 -->
+        <section class="slide">
+            <div style="max-width: 1000px; margin: 0 auto; width: 100%;">
+                <h2 class="anim-el d-1"><span class="stage-num">03</span> 为什么要做这件事？</h2>
+
+                <blockquote class="anim-el d-2">
+                    "AI 浪潮下各种应用全网刷屏，感觉不积极拥抱就要被时代甩开了。"
+                </blockquote>
+
+                <div class="grid-3 anim-el d-3" style="margin-top: 3rem;">
+                    <div class="glass-panel">
+                        <div style="color: var(--accent-cyan); font-size: 2rem; margin-bottom: 1rem;">⚙️</div>
+                        <h4 style="margin-bottom: 1rem; font-size: 1.2rem;">复杂度高</h4>
+                        <p style="font-size: 1rem;">游戏是个人项目综合难度最高品类(策划/美术/音效/开发)。AI若能闭环，他事手到擒来。</p>
+                    </div>
+                    <div class="glass-panel">
+                        <div style="color: var(--accent-red); font-size: 2rem; margin-bottom: 1rem;">✨</div>
+                        <h4 style="margin-bottom: 1rem; font-size: 1.2rem;">纯粹的热爱</h4>
+                        <p style="font-size: 1rem;">一直在做游戏行业周边，但是没参与过制作，一直想亲手做一款自己的游戏。</p>
+                    </div>
+                    <div class="glass-panel">
+                        <div style="color: var(--accent-purple); font-size: 2rem; margin-bottom: 1rem;">💡</div>
+                        <h4 style="margin-bottom: 1rem; font-size: 1.2rem;">一个小念头</h4>
+                        <p style="font-size: 1rem;">想弥补 Steam 游戏 <em>Bad North</em> 兵种和技能太少的遗憾，打造心中更丰富的版本。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: 三阶段概览 -->
+        <section class="slide">
+            <div style="max-width: 1100px; margin: 0 auto; width: 100%;">
+                <h2 class="anim-el d-1" style="justify-content: center; margin-bottom: 4rem;"><span
+                        class="stage-num">04</span> 三个阶段：从零到上线的完整旅程</h2>
+
+                <div class="anim-el d-2" style="position: relative; padding: 2rem 0;">
+                    <!-- Connecting Line -->
+                    <div
+                        style="position: absolute; top: 50%; left: 10%; right: 10%; height: 2px; background: rgba(0,0,0,0.05); z-index: 0;">
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; position: relative; z-index: 1;">
+                        <!-- Phase 1 -->
+                        <div class="glass-panel"
+                            style="width: 30%; text-align: center; border-color: rgba(0,122,255,0.2); background: rgba(0,122,255,0.03);">
+                            <div class="mono"
+                                style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 1rem;">PHASE 1 : 摸索期
+                            </div>
+                            <h3 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">Vibe
+                                Coding</h3>
+                            <p style="font-size: 0.95rem; margin: 0;">"让游戏原型先跑起来"</p>
+                        </div>
+
+                        <!-- Phase 2 -->
+                        <div class="glass-panel"
+                            style="width: 30%; text-align: center; border-color: rgba(255,149,0,0.2); background: rgba(255,149,0,0.03);">
+                            <div class="mono"
+                                style="color: var(--accent-yellow); font-size: 0.9rem; margin-bottom: 1rem;">PHASE 2 :
+                                重构期</div>
+                            <h3 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">Spec
+                                Coding</h3>
+                            <p style="font-size: 0.95rem; margin: 0;">"为AI设计项目结构"</p>
+                        </div>
+
+                        <!-- Phase 3 -->
+                        <div class="glass-panel"
+                            style="width: 30%; text-align: center; border-color: rgba(175,82,222,0.2); background: rgba(175,82,222,0.03);">
+                            <div class="mono"
+                                style="color: var(--accent-purple); font-size: 0.9rem; margin-bottom: 1rem;">PHASE 3 :
+                                开发期</div>
+                            <h3 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">言出法随</h3>
+                            <p style="font-size: 0.95rem; margin: 0;">"纯自然语言驱动项目迭代"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: 4.1 摸索期 - 原型诞生 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">4.1</span> 摸索期：原型诞生</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.8rem;">通过Vibe Coding
+                        让游戏原型先跑起来
+                    </h3>
+                    <p style="margin-bottom: 2rem; font-size: 1.1rem;">工具平台：<strong
+                            style="color: var(--accent-cyan);">with.woa.com</strong> (司内平台，强烈推荐使用)</p>
+
+                    <div
+                        style="background: rgba(0,0,0,0.02); padding: 1.8rem; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);">
+                        <span class="mono"
+                            style="color: var(--text-tertiary); font-size: 0.85rem; margin-bottom: 0.8rem; display: block; font-weight: 600;">PROMPT</span>
+                        <p
+                            style="color: var(--text-primary); margin: 0; font-size: 1.2rem; line-height: 1.6; font-style: italic;">
+                            "你知道 Bad North 这个游戏吗？生成一个和它非常接近的游戏，基于three.js，用html实现，3d，角色可以实时移动和战斗，岛屿防御玩法"
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Bad North 原版图 -->
+                    <div class="glass-panel"
+                        style="padding: 0.5rem; border-radius: 16px; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+                        <span class="hero-badge mono"
+                            style="position: absolute; top: 1rem; left: 1rem; background: rgba(0,0,0,0.6); color: white; border: none; backdrop-filter: blur(8px); z-index: 2;">对标游戏：Bad
+                            North</span>
+                        <img src="./bad north原版.png" alt="Bad North 原版"
+                            style="width: 100%; aspect-ratio: 21/9; object-fit: cover; border-radius: 12px; display: block;">
+                    </div>
+
+                    <!-- H5 原型图 -->
+                    <div class="glass-panel"
+                        style="padding: 0.5rem; border-radius: 16px; position: relative; box-shadow: 0 8px 24px rgba(0,122,255,0.08); border-color: rgba(0,122,255,0.1);">
+                        <span class="hero-badge mono"
+                            style="position: absolute; top: 1rem; left: 1rem; background: var(--accent-cyan); color: white; border: none; box-shadow: 0 4px 12px rgba(0,122,255,0.3); z-index: 2;">生成的
+                            H5 原型</span>
+                        <img src="./h5原型demo.png" alt="H5 原型 Demo"
+                            style="width: 100%; aspect-ratio: 21/9; object-fit: cover; border-radius: 12px; display: block;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6.5: 4.1 摸索期 - H5转小游戏 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">4.1</span> 摸索期：H5 转微信小游戏</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div class="glass-panel"
+                    style="padding: 3rem; display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="color: var(--text-primary); font-size: 1.8rem; margin-bottom: 1.5rem;">"暴力"代码迁移</h3>
+
+                    <ul
+                        style="font-size: 1.1rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <li><strong>代码移植：</strong>把生成的 H5 项目源码与微信小游戏官方的示例代码直接放在一起，让 CodeBuddy 结合上下文去做代码移植。</li>
+                        <li><strong>底层机制：</strong>微信小游戏本质上是基于 HTML Canvas 的语法来实现的，但缺少浏览器标准的 DOM 环境。</li>
+                        <li><strong>预览调试：</strong>需要下载 <strong
+                                style="color: var(--accent-cyan);">微信开发者工具</strong>，才能进行小游戏真实环境的预览与调试。</li>
+                    </ul>
+
+                    <div
+                        style="background: rgba(255,149,0,0.05); border-left: 3px solid var(--accent-yellow); padding: 1.5rem; border-radius: 0 12px 12px 0;">
+                        <h4 style="color: var(--accent-yellow); margin-bottom: 0.8rem; font-size: 1.1rem;">⚠️ 踩坑提示</h4>
+                        <p style="margin: 0; font-size: 1rem; line-height: 1.5; color: var(--text-primary);">
+                            由于 H5 与小游戏的底层环境差异极大，这种转换往往会伴随大量报错。<br><br>
+                            <strong>最佳实践：</strong>如果目标是小游戏，最好一开始就在 Prompt 中强制规定使用小游戏标准代码结构。
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
+                    <div class="glass-panel"
+                        style="padding: 0.5rem; border-radius: 24px; position: relative; box-shadow: 0 12px 32px rgba(0,0,0,0.08);">
+                        <img src="./转微信小游戏.png" alt="转微信小游戏截图"
+                            style="width: 100%; height: auto; border-radius: 18px; display: block; object-fit: cover;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: 4.2 重构期 1 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">4.2</span> 重构期：为 AI 设计项目</h2>
+
+            <blockquote class="anim-el d-2"
+                style="border-left-color: var(--accent-yellow); margin-top: 1rem; margin-bottom: 2rem;">
+                "AI 的能力已经足够好了，但如果项目本身的结构不是为它设计的，能力再强也发挥不出来。"
+            </blockquote>
+
+            <div class="grid-2 anim-el d-3">
+                <div class="glass-panel">
+                    <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 1.5rem;">Vibe Coding 痛点爆发
+                    </h3>
+                    <ul style="font-size: 1.1rem; line-height: 1.8; color: var(--text-secondary);">
+                        <li>代码结构混乱，Bug 改不完</li>
+                        <li>单文件巨大，模型上下文吃不下</li>
+                        <li>没有记忆，每次对话从零开始</li>
+                        <li>性能瓶颈，移动端帧率低且不稳定</li>
+                    </ul>
+                </div>
+
+                <div class="glass-panel" style="border-color: rgba(0,122,255,0.2); background: rgba(0,122,255,0.02);">
+                    <div style="color: var(--accent-cyan); font-size: 2rem; margin-bottom: 1rem;">💡</div>
+                    <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 1.5rem;">如何让 AI 能力发挥出来？
+                    </h3>
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="margin-bottom: 0.5rem; font-size: 1.1rem;"><strong
+                                style="color: var(--accent-cyan);">原则 1：为 AI 设计项目的结构</strong></p>
+                        <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6;">项目结构不应该是给人看的，必须对 AI
+                            友好，让 AI 能够局部修改而牵一发不动全身。</p>
+                    </div>
+                    <div>
+                        <p style="margin-bottom: 0.5rem; font-size: 1.1rem;"><strong
+                                style="color: var(--accent-cyan);">原则 2：All in One，纯代码生成</strong></p>
+                        <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6;">
+                            项目的一切（包括3D模型、贴图、音效、视觉特效）都必须由纯代码生成。确保项目的所有效果都能直接通过与 AI 对话来实现。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7.5: 4.2 重构期 2 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">4.2</span> 重构期：架构与技术栈选型</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div class="glass-panel" style="border-color: rgba(255,149,0,0.3);">
+                    <h3 style="color: var(--accent-yellow); font-size: 1.4rem; margin-bottom: 1.5rem;">两个关键技术选择</h3>
+
+                    <div style="margin-bottom: 2rem;">
+                        <p style="margin-bottom: 0.5rem;"><strong
+                                style="color: var(--text-primary); font-size: 1.1rem;">1. 不使用现成游戏引擎 (Unity/UE)</strong>
+                        </p>
+                        <p style="font-size: 1rem; line-height: 1.6; color: var(--text-secondary);">
+                            原因：消除黑箱。商用引擎有大量的编辑器操作和私有二进制资源文件，这阻断了自然语言到成果的路径。剥离引擎才能让 AI 看到并修改底层的每一个细节。
+                        </p>
+                    </div>
+
+                    <div>
+                        <p style="margin-bottom: 0.5rem;"><strong
+                                style="color: var(--text-primary); font-size: 1.1rem;">2. All in Code (纯 Web
+                                技术栈)</strong></p>
+                        <p style="font-size: 1rem; line-height: 1.6; color: var(--text-secondary);">
+                            原因：Three.js + 纯 JS。这是 AI 训练语料中最庞大的知识库，是当前 AI 代码生成能力最强的领域。
+                        </p>
+                    </div>
+
+                    <div
+                        style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.85rem; color: var(--text-tertiary); font-weight: 600;" class="mono">💡
+                            AI 分工策略：</span>
+                        <span
+                            style="background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; color: var(--text-secondary); border: 1px solid rgba(0,0,0,0.05);">Claude
+                            写逻辑</span>
+                        <span
+                            style="background: linear-gradient(135deg, #1a73e8 0%, #af52de 100%); padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(175,82,222,0.3); display: inline-flex; align-items: center; gap: 4px; transform: scale(1.05);">✨
+                            Gemini 写视觉</span>
+                        <span
+                            style="background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; color: var(--text-secondary); border: 1px solid rgba(0,0,0,0.05);">GPT
+                            Debug</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="display: flex; flex-direction: column;">
+                    <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 1rem;">仿引擎分层架构 & 极致零资源</h3>
+
+                    <p
+                        style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5; padding: 0.8rem; background: rgba(0,122,255,0.05); border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+                        <strong>架构价值：</strong>核心是为了<strong style="color: var(--text-primary);">解耦</strong>。让 AI 能<strong
+                            style="color: var(--text-primary);">安全地局部修改任何模块</strong>。例如事件总线机制能避免模块间硬耦合，AI
+                        改底层逻辑也不会引发全局的连锁报错。
+                    </p>
+
+                    <div
+                        style="flex: 1; background: rgba(0,0,0,0.02); border-radius: 12px; padding: 1.2rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; overflow-x: hidden;">
+                        <div style="margin-bottom: 6px;"><strong
+                                style="color: var(--accent-cyan); display: inline-block; width: 85px;">[核心/入口]</strong>
+                            启动适配、事件总线 (通信解耦)</div>
+                        <div style="margin-bottom: 6px;"><strong
+                                style="color: var(--accent-cyan); display: inline-block; width: 85px;">[管理层]</strong>
+                            全局状态与生命周期调度</div>
+                        <div style="margin-bottom: 6px;"><strong
+                                style="color: var(--accent-cyan); display: inline-block; width: 85px;">[系统层]</strong>
+                            独立业务逻辑（如战斗、AI行为）</div>
+                        <div style="margin-bottom: 6px;"><strong
+                                style="color: var(--accent-cyan); display: inline-block; width: 85px;">[对象层]</strong>
+                            具体的游戏实体（如兵种、小岛）</div>
+                        <div><strong
+                                style="color: var(--accent-cyan); display: inline-block; width: 85px;">[基础层]</strong>
+                            通用工具、工厂类与材质数据</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                        <div
+                            style="background: rgba(0,122,255,0.05); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-cyan);">166</div>
+                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">纯 JS 文件数</div>
+                        </div>
+                        <div
+                            style="background: rgba(255,59,48,0.05); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-red);">&lt;4<span
+                                    style="font-size: 1rem;">MB</span></div>
+                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">项目总体积</div>
+                        </div>
+                        <div
+                            style="background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">0</div>
+                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">3D模型/贴图/音效文件</div>
+                        </div>
+                        <div
+                            style="background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">4</div>
+                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">支持平台数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: 4.3 开发期 -->
+        <section class="slide">
+            <div style="max-width: 1000px; margin: 0 auto; width: 100%;">
+                <h2 class="anim-el d-1"><span class="stage-num">4.3</span> 开发期：言出法随般的体验</h2>
+
+                <p class="anim-el d-2" style="font-size: 1.2rem; margin-bottom: 3rem;">
+                    传统项目里，数值在 Excel、模型在 Blender、音效在音频工程，AI 像蒙着眼干活。<br>
+                    本项目中，<strong style="color: var(--accent-cyan);">一切皆代码</strong>。AI 能一眼看穿 数值 → 逻辑 → 视觉 → 音效 的全链路。
+                </p>
+
+                <div class="anim-el d-3 glass-panel" style="padding: 1.5rem 3rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 65%;">我说的话 (Prompt)</th>
+                                <th>对应传统工序涉及的工种</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"弓箭手的箭飞得太快了，放慢一点，加条拖尾"</td>
+                                <td style="color: var(--accent-cyan);">策划 + 程序</td>
+                            </tr>
+                            <tr>
+                                <td>"冬天的树太白了，改成冷灰色"</td>
+                                <td style="color: var(--accent-cyan);">美术</td>
+                            </tr>
+                            <tr>
+                                <td>"加一个新兵种武僧，近战，有范围控制技能"</td>
+                                <td style="color: var(--accent-cyan);">策划 + 程序 + 美术 + 音效</td>
+                            </tr>
+                            <tr>
+                                <td>"描边效果太强了，远处不要描"</td>
+                                <td style="color: var(--accent-cyan);">TA (技术美术)</td>
+                            </tr>
+                            <tr>
+                                <td style="border-bottom: none;">"BGM 在子弹时间应该变慢"</td>
+                                <td style="color: var(--accent-cyan); border-bottom: none;">音频设计</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9: 案例 1：地图 1 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">05</span> 应用案例分享：地图生成</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.6rem;">程序化地图的愿景</h3>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+                        我希望游戏的核心场景不再是手绘的死地图，而是通过代码<strong style="color: var(--accent-cyan);">程序化生成 (Procedural
+                            Generation)</strong> 的无限世界。
+                    </p>
+
+                    <ul style="font-size: 1.1rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 2rem;">
+                        <li><strong>唯一种子复现：</strong>只要拿到相同的随机种子 (Seed)，随时能 100% 还原一模一样的地图内容。</li>
+                        <li><strong>兼顾游戏性与美学：</strong>地图不能只是一堆乱七八糟的像素，它必须具备策略游戏需要的地形逻辑，同时在视觉上必须好看。</li>
+                        <li><strong>质量保障：</strong>生成的地图必须是"合法"的，不能出现死胡同或无法通行的水域。</li>
+                    </ul>
+                </div>
+
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./地图演示.png" alt="地图演示" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9.5: 案例 1：地图 2 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">05</span> 应用案例分享：地图生成</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.6rem;">基于柏林噪声的生成逻辑</h3>
+
+                    <ul style="font-size: 1.1rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 2rem;">
+                        <li><strong>9 步生成管线：</strong>从初始化网格、柏林噪声生成高度图、强制沙滩边界，到地形平滑和路径连通性验证。</li>
+                        <li><strong>5 种地形模式：</strong>单岛、双岛、半岛、海湾、内陆湖，同一套算法换个随机种子就是全新地图。</li>
+                        <li><strong>7 阶段自动质检：</strong>自动检测确保陆地面积足够，且所有区域互相连通（敌人有路走，玩家有地守）。</li>
+                    </ul>
+
+                    <div
+                        style="background: rgba(0,122,255,0.05); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+                        <strong style="color: var(--text-primary);">AI 可视化调试工具</strong><br>
+                        <span style="font-size: 0.95rem; color: var(--text-tertiary);">专门让 AI 写了可视化调试工具，甚至能一次批量生成 100
+                            张地图来验证算法可靠性。</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./地图生成系统.png" alt="地图生成系统" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;">
+                    </div>
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./地图测试工具.png" alt="地图测试工具" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: 案例 2：角色 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">05</span> 应用案例分享：角色与美术</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 1rem;">
+                <div>
+                    <div class="glass-panel" style="margin-bottom: 1rem;">
+                        <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 0.8rem;">纯代码手搓 3D 角色
+                        </h3>
+                        <p
+                            style="font-size: 1rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 1rem;">
+                            全项目 <strong style="color: var(--accent-cyan);">0
+                                个模型文件</strong>。每个角色都是用代码拼出来的：圆柱体当身体，球体当头，长方体当手脚。<br>
+                            采用极简的 Lowpoly 可以把"粗糙"变成"风格"。
+                        </p>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <span class="hero-badge mono" style="font-size: 0.8rem; border-radius: 6px;">民兵: 剑盾</span>
+                            <span class="hero-badge mono" style="font-size: 0.8rem; border-radius: 6px;">弓箭手: 长弓</span>
+                            <span class="hero-badge mono" style="font-size: 0.8rem; border-radius: 6px;">游侠: 匕首</span>
+                            <span class="hero-badge mono" style="font-size: 0.8rem; border-radius: 6px;">武僧: 光环</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel" style="border-color: rgba(255,149,0,0.3);">
+                        <h3 style="color: var(--accent-yellow); font-size: 1.4rem; margin-bottom: 0.8rem;">自制可视化角色编辑器
+                        </h3>
+                        <p style="font-size: 1rem; line-height: 1.6; color: var(--text-secondary); margin-bottom: 0;">
+                            虽然没有使用游戏引擎，但我在 Web 端实现了一个<strong
+                                style="color: var(--text-primary);">完全可控的角色编辑器</strong>。<br>
+                            它使用了和游戏内<strong style="color: var(--text-primary);">完全相同的渲染逻辑</strong>，支持边调边看，所见即所得。
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <video src="./角色编辑器视频.mov" autoplay loop muted playsinline class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;"></video>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10.5: 案例 2：美术 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">05</span> 应用案例分析：角色与美术</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 1.5rem; gap: 2rem;">
+                <!-- 左侧：渲染管线流程 -->
+                <div style="display: flex; flex-direction: column; gap: 1.2rem; justify-content: center;">
+
+                    <!-- 核心公式 -->
+                    <div class="glass-panel"
+                        style="padding: 1.2rem 1.5rem; border-left: 4px solid var(--accent-cyan); background: rgba(0, 240, 255, 0.03);">
+                        <p style="font-size: 1.1rem; color: var(--text-primary); margin: 0; line-height: 1.5;">
+                            不用现成的游戏引擎，如何用纯代码实现 <strong
+                                style="color: var(--accent-cyan); font-size: 1.2rem;">低多边形唯美绘本风</strong>？
+                        </p>
+                    </div>
+
+                    <!-- 步骤流程 -->
+                    <div
+                        style="display: flex; flex-direction: column; gap: 1.5rem; position: relative; margin-top: 0.5rem;">
+                        <!-- 装饰竖线 -->
+                        <div
+                            style="position: absolute; left: 16px; top: 20px; bottom: 20px; width: 2px; background: rgba(255,255,255,0.1); z-index: 0;">
+                        </div>
+
+                        <!-- 步骤 1 -->
+                        <div style="position: relative; padding-left: 3.5rem;">
+                            <div
+                                style="position: absolute; left: 0; top: 0; width: 34px; height: 34px; background: var(--bg-surface); border: 2px solid #FF9500; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: #FF9500; z-index: 1;">
+                                1</div>
+                            <h4 style="color: #FF9500; font-size: 1.1rem; margin-bottom: 0.5rem;">地形着色器：捏出形状与质感</h4>
+                            <ul
+                                style="font-size: 0.95rem; color: var(--text-secondary); padding-left: 1.2rem; margin: 0; line-height: 1.6;">
+                                <li><strong>顶点着色器</strong>：对生硬的方块进行膨胀形变，模拟手工捏制的“粘土感”，并自动缝合拼接处的裂缝。</li>
+                                <li><strong>片元着色器</strong>：通过算法生成手绘笔触般的微弱色差和自然的草地边缘。</li>
+                            </ul>
+                        </div>
+
+                        <!-- 步骤 2 -->
+                        <div style="position: relative; padding-left: 3.5rem;">
+                            <div
+                                style="position: absolute; left: 0; top: 0; width: 34px; height: 34px; background: var(--bg-surface); border: 2px solid #00C7FF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: #00C7FF; z-index: 1;">
+                                2</div>
+                            <h4 style="color: #00C7FF; font-size: 1.1rem; margin-bottom: 0.5rem;">光影与氛围：注入立体感</h4>
+                            <ul
+                                style="font-size: 0.95rem; color: var(--text-secondary); padding-left: 1.2rem; margin: 0; line-height: 1.6;">
+                                <li><strong>光照计算</strong>：给物体边缘加上透亮的冷白光（增加空气感），底部加深阴影（增加体积感）。</li>
+                                <li><strong>动态雾效</strong>：雾气会根据镜头远近和游戏中灯塔的修建状态，平滑自然地消散。</li>
+                            </ul>
+                        </div>
+
+                        <!-- 步骤 3 -->
+                        <div style="position: relative; padding-left: 3.5rem;">
+                            <div
+                                style="position: absolute; left: 0; top: 0; width: 34px; height: 34px; background: var(--bg-surface); border: 2px solid #AF52DE; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: #AF52DE; z-index: 1;">
+                                3</div>
+                            <h4 style="color: #AF52DE; font-size: 1.1rem; margin-bottom: 0.5rem;">全屏后处理：完成画风转化</h4>
+                            <ul
+                                style="font-size: 0.95rem; color: var(--text-secondary); padding-left: 1.2rem; margin: 0; line-height: 1.6;">
+                                <li><strong>描边着色器</strong>：先将场景渲染成带“深度”信息的画面，再通过算法识别物体的立体轮廓。</li>
+                                <li><strong>线稿叠加</strong>：在轮廓上画出深灰色细线，并做到“近处清晰、远处变淡”，最终呈现“三渲二”效果。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：最终效果图展示 -->
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./画风.png" alt="游戏渲染最终效果" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 11: 案例 3：音频 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">05</span> 应用案例分享：音频系统</h2>
+
+            <div class="grid-2 anim-el d-2" style="margin-top: 2rem;">
+                <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-size: 1.6rem;">0 音频文件的声音世界</h3>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+                        这可能是整个项目最"离谱"的部分：背景音乐、攻击声、脚步声、技能音效，<strong
+                            style="color: var(--accent-cyan);">没有使用任何音频文件</strong>。
+                    </p>
+
+                    <ul style="font-size: 1.1rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 2rem;">
+                        <li><strong>实时合成：</strong>全部基于 Web Audio API 实时代码合成发声。</li>
+                        <li><strong>深度联动：</strong>与游戏状态物理绑定（例如子弹时间慢动作时，音效物理减速降调）。</li>
+                        <li><strong>完美契合：</strong>AI 知道动画精确时长，生成完全贴合节奏的声音波形。</li>
+                    </ul>
+
+                    <div
+                        style="background: rgba(255,149,0,0.05); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-yellow);">
+                        <strong style="color: var(--accent-yellow);">可视化的音频测试工具</strong><br>
+                        <span style="font-size: 0.95rem; color: var(--text-tertiary);">为调试纯代码生成的音效，专门开发了可视化测试面板，涵盖 DJ
+                            模式环境音合成与战斗打击音效合成。</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./音频工具.png" alt="音频工具 1" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;">
+                    </div>
+                    <div class="glass-panel" style="padding: 0.5rem; border-radius: 16px;">
+                        <img src="./音频工具2.png" alt="音频工具 2" class="zoomable-image"
+                            style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 11: 微信上架 -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">06</span> 微信小游戏上架实操经验</h2>
+
+            <div class="grid-2 anim-el d-2">
+                <div class="glass-panel">
+                    <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 1.5rem;">平台适配要点</h3>
+                    <ul style="margin-bottom: 3rem; line-height: 1.6;">
+                        <li>让AI注意识别 微信小游戏 vs H5 的关键差异</li>
+                        <li><strong>实现平台适配层</strong>：一套接口隔离差异，支持 微信/浏览器/Electron/Capacitor
+                            <div style="font-size: 0.9rem; color: var(--text-tertiary); margin-top: 0.3rem;">*
+                                注：如果想多平台分发，需要注意这个适配</div>
+                        </li>
+                    </ul>
+
+                    <h3 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 1.5rem;">开发提效建议</h3>
+                    <ul style="line-height: 1.6; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li><strong>官方文档</strong>：将微信小游戏官方开发文档喂给 AI，让 AI 帮你查阅和定位问题</li>
+                        <li><strong>微信云开发</strong>：官方提供了完善配套的云服务，可直接使用云开发快速实现后端功能</li>
+                        <li><strong>iOS高性能模式</strong>：记得开启模式以提高ios端帧率</li>
+                        <li><strong>PC适配</strong>：如有需要可进行大屏与键鼠适配</li>
+                        <li><strong style="color: var(--accent-cyan);">微信小游戏预览插件</strong>：不打开开发者工具也能调试</li>
+
+                    </ul>
+                </div>
+
+                <div class="glass-panel" style="border-color: rgba(255,59,48,0.3);">
+                    <h3 style="color: var(--accent-red); font-size: 1.4rem; margin-bottom: 1.5rem;">个人开发者上架流程</h3>
+                    <div class="timeline" style="margin-left: 1rem;">
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>注册与资质</h4>
+                                <p style="font-size: 0.95rem;">账号申请及必需审核材料准备（个人备案-1个月）</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>开发联调</h4>
+                                <p style="font-size: 0.95rem;">使用微信小游戏框架结构进行开发</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>代码审核</h4>
+                                <p style="font-size: 0.95rem;">提交代码版本进行平台审核</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>发布与监控</h4>
+                                <p style="font-size: 0.95rem;">上线后的数据观测及更新</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 12: 洞察与寄语 -->
+        <section class="slide">
+            <div style="max-width: 1000px; margin: 0 auto; width: 100%; text-align: center;">
+                <h2 class="anim-el d-1" style="justify-content: center;"><span class="stage-num">07</span> 洞察与寄语：你也可以做到
+                </h2>
+
+                <div class="anim-el d-2 glass-panel" style="margin: 3rem auto; padding: 2.5rem 4rem;">
+                    <h3 style="font-size: 1.4rem; margin-bottom: 2rem; color: var(--text-secondary);">游戏是妥协的艺术</h3>
+
+                    <div style="display: flex; justify-content: center; gap: 3rem; text-align: left; padding: 1rem 0;">
+                        <!-- 舍弃部分 -->
+                        <div style="flex: 1; text-align: right;">
+                            <div style="margin-bottom: 1.8rem;">
+                                <span
+                                    style="display: inline-block; padding: 0.4rem 1.2rem; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-tertiary); font-size: 0.95rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); letter-spacing: 1px;">➖
+                                    主动舍弃</span>
+                            </div>
+                            <div
+                                style="color: var(--text-secondary); font-size: 1.1rem; opacity: 0.8; line-height: 1.5;">
+                                <p style="margin-bottom: 1.5rem;">精美贴图与高精度 3D 模型</p>
+                                <p style="margin-bottom: 1.5rem;">录音棚级别的外置音效品质</p>
+                                <p style="margin-bottom: 0;">商业游戏引擎的可视化便利</p>
+                            </div>
+                        </div>
+
+                        <!-- 分隔线 -->
+                        <div
+                            style="width: 1px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);">
+                        </div>
+
+                        <!-- 获得部分 -->
+                        <div style="flex: 1; text-align: left;">
+                            <div style="margin-bottom: 1.8rem;">
+                                <span
+                                    style="display: inline-block; padding: 0.4rem 1.2rem; border-radius: 8px; background: rgba(0,122,255,0.1); color: var(--accent-cyan); font-size: 0.95rem; font-weight: 600; border: 1px solid rgba(0,122,255,0.2); letter-spacing: 1px;">✨
+                                    换取收益</span>
+                            </div>
+                            <div style="color: var(--text-primary); font-size: 1.1rem; line-height: 1.5;">
+                                <p style="margin-bottom: 1.5rem;">AI <strong
+                                        style="color: var(--accent-cyan);">直接掌控并修改</strong>任何游戏外观</p>
+                                <p style="margin-bottom: 1.5rem;">AI <strong
+                                        style="color: var(--accent-cyan);">通过代码精准调优</strong>所有物理音效</p>
+                                <p style="margin-bottom: 0;">AI <strong
+                                        style="color: var(--accent-cyan);">彻底读懂且能重构</strong>每一行系统逻辑</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="anim-el d-3" style="margin-top: 4rem;">
+                    <p style="font-size: 1.5rem; line-height: 1.6; color: var(--text-primary);">
+                        AI 不会替代创作者，但它正让 <strong style="color: var(--accent-cyan);">"一个人 = 一个团队"</strong> 变成现实。<br>
+                        不是 AI 替你做了游戏，而是你学会了 <strong style="color: var(--accent-cyan);">用 AI 能理解的方式</strong> 去创造。
+                    </p>
+                    <h1 style="margin-top: 3rem; font-size: 3.5rem; color: var(--text-primary);">做游戏，比玩游戏更有意思。</h1>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 13: Contact -->
+        <section class="slide">
+            <h2 class="anim-el d-1"><span class="stage-num">08</span> 保持联系</h2>
+
+            <div style="max-width: 1200px; margin: 1rem auto 0; width: 100%;">
+                <div style="text-align: center; margin-bottom: 3rem;">
+                    <h1 class="anim-el d-2" style="font-size: 4rem; font-weight: 700; margin-bottom: 1rem;">Let's
+                        Connect</h1>
+                    <p class="anim-el d-3" style="font-size: 1.4rem; color: var(--text-secondary);">
+                        一起做有意思的事，期待与大家交流探讨。
+                    </p>
+                </div>
+
+                <div class="anim-el d-4"
+                    style="display: flex; justify-content: center; align-items: flex-start; gap: 2rem; width: 100%; max-width: 1100px; margin: 0 auto;">
+                    <!-- 左侧：微信二维码 -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <img src="./个人二维码.png" alt="个人微信二维码" class="zoomable-image"
+                            style="display: block; max-height: 360px; width: auto; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); cursor: zoom-in;">
+                        <p
+                            style="margin-top: 1.5rem; color: var(--text-secondary); font-size: 1.1rem; font-weight: 500;">
+                            扫码添加微信</p>
+                    </div>
+
+                    <!-- 中间：个人网站入口 -->
+                    <div style="flex: 1.5; display: flex; flex-direction: column; justify-content: center;">
+                        <a href="https://xm-smile.github.io/smilez.ai/" target="_blank"
+                            style="position: relative; display: block; height: 360px; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.1); transition: transform 0.3s ease, box-shadow 0.3s ease; text-decoration: none;"
+                            onmouseover="this.style.transform='scale(1.02) translateY(-5px)'; this.style.boxShadow='0 30px 80px rgba(0,0,0,0.15)';"
+                            onmouseout="this.style.transform='scale(1) translateY(0)'; this.style.boxShadow='0 20px 60px rgba(0,0,0,0.1)';">
+                            <img src="./个人网站截图.png" alt="个人主页截图"
+                                style="width: 100%; height: 100%; object-fit: cover; object-position: top; display: block;">
+                            <div
+                                style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 2rem;">
+                                <div style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 1rem; border-radius: 16px; display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <h3 style="color: white; font-size: 1.2rem; margin-bottom: 0.2rem; font-weight: 600;">访问个人主页</h3>
+                                        <p style="color: rgba(255,255,255,0.85); font-size: 0.85rem; margin: 0; font-family: monospace;">xm-smile.github.io/smilez.ai</p>
+                                    </div>
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        <p style="margin-top: 1.5rem; color: var(--text-secondary); font-size: 1.1rem; font-weight: 500; text-align: center;">更多AI游戏想法与我的作品</p>
+                    </div>
+
+                    <!-- 右侧：同行者 AI 游戏 -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                        <!-- 视频预览容器：绝对定位在左侧，且 pointer-events: none 避免干扰 -->
+                        <div id="gameVideoContainer" style="position: absolute; top: 0; right: 105%; width: 380px; height: 214px; background: rgba(0,0,0,0.85); border-radius: 16px; display: none; overflow: hidden; border: 3px solid white; z-index: 1000; pointer-events: none; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                            <video id="gamePreviewVideo" style="width: 100%; height: 100%; object-fit: contain;" muted loop playsinline></video>
+                        </div>
+                        
+                        <div id="gamesListContainer" style="height: 360px; width: 100%; overflow-y: auto; padding: 0.5rem; scrollbar-width: none;">
+                            <style>
+                                .games-list {
+                                    background: rgba(255, 255, 255, 0.6);
+                                    border: 1px solid rgba(0, 0, 0, 0.05);
+                                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+                                    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                                }
+                                .games-list:hover {
+                                    background: rgba(255, 255, 255, 0.95) !important;
+                                    transform: scale(1.02);
+                                    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+                                    border: 1px solid rgba(0, 122, 255, 0.15);
+                                }
+                                .games-list::-webkit-scrollbar { display: none; }
+                            </style>
+                            <!-- 游戏列表项 -->
+                            <div class="games-list" data-video="./微笑物料/微笑物料/星落引力局实机.mp4" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border-radius: 16px; transition: background 0.3s ease; cursor: pointer;" title="星落引力局">
+                                <img src="./微笑物料/微笑物料/星落引力局图标.jpg" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden;">
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap;">星落引力局</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">05</span>
+                                </div>
+                            </div>
+                            <div class="games-list" data-video="./微笑物料/微笑物料/2048实机.mp4" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border-radius: 16px; transition: background 0.3s ease; cursor: pointer;" title="肉鸽2048">
+                                <img src="./微笑物料/微笑物料/2048 APP图标2.png" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden;">
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap;">肉鸽2048</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">书店店长</span>
+                                </div>
+                            </div>
+                            <div class="games-list" data-video="./微笑物料/微笑物料/村好剑实机.mp4" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border-radius: 16px; transition: background 0.3s ease; cursor: pointer;" title="全村最好的剑">
+                                <img src="./微笑物料/微笑物料/村好剑APP图标.png" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden;">
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap;">全村最好的剑</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">N3</span>
+                                </div>
+                            </div>
+                            <div class="games-list" data-video="./微笑物料/微笑物料/彼岸信笺实机.mp4" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.5rem; border-radius: 16px; transition: background 0.3s ease; cursor: pointer;" title="彼岸信笺">
+                                <img src="./微笑物料/微笑物料/彼岸信笺图标.jpg" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden;">
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap;">彼岸信笺</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">一株草</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; border-radius: 16px; border: 1px dashed rgba(0,0,0,0.1); opacity: 0.6;">
+                                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">+</div>
+                                <div style="display: flex; flex-direction: column; gap: 0.1rem;">
+                                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-tertiary);">加入交流群结识更多同好</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">Adding more...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 1rem; font-weight: 500; text-align: center;">同行者们的AI游戏</p>
+                        <script>
+                            const videoContainer = document.getElementById('gameVideoContainer');
+                            const gameVideo = document.getElementById('gamePreviewVideo');
+                            const gamesList = document.getElementById('gamesListContainer');
+                            let hoverTimeout;
+
+                            gamesList.addEventListener('mouseover', function(e) {
+                                const target = e.target.closest('.games-list');
+                                // 将 DOM 引用存为字符串 ID 或使用自定义属性判断
+                                const currentActive = gamesList.dataset.activeItem;
+                                if (target && target.title !== currentActive) {
+                                    clearTimeout(hoverTimeout);
+                                    gamesList.dataset.activeItem = target.title;
+                                    const src = target.getAttribute('data-video');
+                                    if (src) {
+                                        gameVideo.src = src;
+                                        gameVideo.onloadedmetadata = function() {
+                                            const isPortrait = gameVideo.videoHeight > gameVideo.videoWidth;
+                                            videoContainer.style.width = isPortrait ? '280px' : '480px';
+                                            videoContainer.style.height = isPortrait ? '497px' : '270px';
+                                            videoContainer.style.display = 'block';
+                                            gameVideo.play();
+                                        };
+                                    }
+                                }
+                            });
+
+                            gamesList.addEventListener('mouseout', function(e) {
+                                // 检查鼠标是否真的离开了 gamesListContainer 范围
+                                if (!gamesList.contains(e.relatedTarget)) {
+                                    hoverTimeout = setTimeout(() => {
+                                        gameVideo.pause();
+                                        videoContainer.style.display = 'none';
+                                        gamesList.dataset.activeItem = '';
+                                    }, 50);
+                                }
+                            });
+                        </script>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Slide 14: Q&A -->
+        <section class="slide">
+            <h2 class="anim-el d-1" style="display: none;">Q&amp;A</h2>
+            <div
+                style="max-width: 800px; margin: 0 auto; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding-top: 10vh;">
+                <h1 class="anim-el d-1"
+                    style="font-size: 8rem; font-weight: 800; letter-spacing: -0.05em; margin-bottom: 2rem; background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Q & A</h1>
+                <p class="anim-el d-2" style="font-size: 2rem; color: var(--text-secondary); font-weight: 500;">
+                    感谢聆听！开放交流探讨。
+                </p>
+            </div>
+        </section>
+
+
+
+    </div>
+
+    <!-- UI Controls -->
+    <div class="progress-bar-container">
+        <div class="progress-fill" id="progressBar"></div>
+    </div>
+
+    <div class="controls">
+        <div class="counter" id="slideCounter">01 / 13</div>
+    </div>
+
+    <!-- Sidebar Navigation Index -->
+    <div id="sidebarNav" class="sidebar-nav"></div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-controls">
+        <button class="nav-btn prev" id="prevBtn" title="上一页 (←)">
+            <svg viewBox="0 0 24 24">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </button>
+        <button class="nav-btn next" id="nextBtn" title="下一页 (→/Space)">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const progressBar = document.getElementById('progressBar');
+        const slideCounter = document.getElementById('slideCounter');
+        let currentSlide = 0;
+        let isAnimating = false;
+
+        function updateDeck() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'past');
+
+                // Reset animations
+                const animEls = slide.querySelectorAll('.anim-el');
+                animEls.forEach(el => {
+                    el.style.animation = 'none';
+                    el.offsetHeight; // trigger reflow
+                    el.style.animation = null;
+                });
+
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('past');
+                }
+            });
+
+            // Update UI
+            const percentage = ((currentSlide + 1) / slides.length) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            const currentStr = String(currentSlide + 1).padStart(2, '0');
+            const totalStr = String(slides.length).padStart(2, '0');
+            slideCounter.textContent = `${currentStr} / ${totalStr}`;
+
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) prevBtn.classList.toggle('disabled', currentSlide === 0);
+            if (nextBtn) nextBtn.classList.toggle('disabled', currentSlide === slides.length - 1);
+
+            // Update sidebar active state
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            sidebarItems.forEach((item, index) => {
+                if (index === currentSlide) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function navigate(direction) {
+            if (isAnimating) return;
+
+            const nextSlide = currentSlide + direction;
+            if (nextSlide >= 0 && nextSlide < slides.length) {
+                isAnimating = true;
+                currentSlide = nextSlide;
+                updateDeck();
+
+                // Prevent rapid scrolling
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 700);
+            }
+        }
+
+        // Button click navigation
+        document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
+        document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) {
+                e.preventDefault();
+                navigate(1);
+            } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+                e.preventDefault();
+                navigate(-1);
+            }
+        });
+
+        // Mouse wheel navigation disabled (user requested to remove this interaction)
+        /* document.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) > 40) {
+                navigate(e.deltaY > 0 ? 1 : -1);
+            }
+        }, { passive: true }); */
+
+        // Init Sidebar
+        const sidebarContainer = document.getElementById('sidebarNav');
+        slides.forEach((slide, index) => {
+            const h2 = slide.querySelector('h2');
+            let title = 'Slide ' + (index + 1);
+            if (h2) {
+                // Remove the stage-num text for cleaner display
+                const span = h2.querySelector('.stage-num');
+                if (span) {
+                    title = h2.textContent.replace(span.textContent, '').trim();
+                } else {
+                    title = h2.textContent.trim();
+                }
+            }
+
+            const item = document.createElement('div');
+            item.className = 'sidebar-item';
+            item.innerHTML = `
+                <div class="sidebar-dot"></div>
+                <div class="sidebar-text" title="${title}">${title}</div>
+            `;
+            item.addEventListener('click', () => {
+                if (isAnimating || currentSlide === index) return;
+                isAnimating = true;
+                currentSlide = index;
+                updateDeck();
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 700);
+            });
+            sidebarContainer.appendChild(item);
+        });
+
+        // Init
+        updateDeck();
+    </script>
+
+    <!-- Lightbox Container & Logic -->
+    <div class="lightbox" id="media-lightbox">
+    </div>
+    <script>
+        const lightboxContainer = document.getElementById('media-lightbox');
+
+        document.body.addEventListener('click', (e) => {
+            const isMedia = e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO';
+            const isInsideSlide = e.target.closest('.slide');
+            const isZoomable = !e.target.classList.contains('no-zoom');
+
+            if (isMedia && isInsideSlide && isZoomable && !lightboxContainer.classList.contains('active')) {
+                // Clear previous content
+                lightboxContainer.innerHTML = '';
+
+                let clone;
+                const videoSrc = e.target.getAttribute('data-video-src');
+                if (videoSrc) {
+                    clone = document.createElement('video');
+                    clone.src = videoSrc;
+                    clone.controls = true;
+                    clone.autoplay = true;
+                    clone.muted = false;
+                } else {
+                    // Clone the clicked element
+                    clone = e.target.cloneNode(true);
+                    // If it's a video, enable controls and autoplay, and unmute if it was muted
+                    if (clone.tagName === 'VIDEO') {
+                        clone.controls = true;
+                        clone.autoplay = true;
+                        clone.muted = false;
+                    }
+                }
+
+                // Reset styles that might constrain the image/video in fullscreen
+                clone.style.width = 'auto';
+                clone.style.height = 'auto';
+                clone.style.maxWidth = '90%';
+                clone.style.maxHeight = '90%';
+                clone.style.margin = '0';
+
+                lightboxContainer.appendChild(clone);
+
+                // Force a reflow before adding active class for animation
+                void lightboxContainer.offsetWidth;
+                lightboxContainer.classList.add('active');
+            } else if (lightboxContainer.classList.contains('active')) {
+                lightboxContainer.classList.remove('active');
+                // Remove content after fade out to stop videos
+                setTimeout(() => {
+                    if (!lightboxContainer.classList.contains('active')) {
+                        lightboxContainer.innerHTML = '';
+                    }
+                }, 300);
+            }
+        });
+    </script>
+</body>
+
+</html>
